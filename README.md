@@ -15,8 +15,8 @@ Core Agents
   SearchManager (searchmanager.sarl)
   
         Role: Manages the overall search process and coordinates between the agents.
-        Functionality:
         
+        Functionality:
             Sets the initial search path and criteria (.sarl files).
             Sends the initial SearchRequest event to start the search process.
             Receives FileFound events from agents when files matching the criteria are located.
@@ -25,8 +25,8 @@ Core Agents
   SearchAgent (search.sarl)
   
         Role: Conducts the search within an assigned directory, and spawns sub-agents for any detected subdirectories.
-        Functionality:
         
+        Functionality:
             Searches the directory specified in the SearchRequest.
             Checks each item in the directory: if it’s a subdirectory, spawns a new SearchAgent to handle it; if it’s a file matching the search criteria, sends a FileFound event to the SearchManager.
             Sends a SearchFinished event to indicate when its assigned search is complete.
