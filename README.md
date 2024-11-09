@@ -77,7 +77,6 @@ Project Structure
 Requirements
 
     SARL: This project is developed in SARL, so SARL must be installed and configured in your environment.
-    Janus Platform: The Janus platform is required for SARL projects; configure it accordingly.
 
 Running the Project
 
