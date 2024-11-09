@@ -1,0 +1,23 @@
+package io.sarl.demos.basic.holarchy
+
+event SearchRequest {
+	val dirPath : String
+	val searchCriteria : String
+
+	new (p : String, c : String) {
+		dirPath = p
+		searchCriteria = c
+	}
+}
+
+event FileFound {
+	val fileFoundPath : String
+
+	new (p : String) {
+		fileFoundPath = p
+	}
+}
+
+event SearchFinished {
+}
+

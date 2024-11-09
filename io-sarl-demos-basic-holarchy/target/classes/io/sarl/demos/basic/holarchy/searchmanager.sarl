@@ -1,0 +1,31 @@
+package io.sarl.demos.basic.holarchy
+
+import io.sarl.api.core.*
+
+agent searchmanager {
+	uses Lifecycle, Schedules, Logging, DefaultContextInteractions
+
+	val path = "C:\\Users\\OUBRAIM\\Downloads\\io-sarl-demos-basic-holarchy"
+	val criteria = ".sarl"
+
+	on Initialize {
+		loggingName = "SearchManager"
+		info("SearchManager initialized.")
+		task("discovery").every(1000) [
+			if (defaultSpace.numberOfStrongParticipants > 1) {
+				info("Search Agent detected.")
+				emit(new SearchRequest(path as String, criteria as String)) 
+				task("discovery").cancel
+			}
+		]
+	}
+
+	on FileFound {
+		info("SearchManager received file: " + occurrence.fileFoundPath)
+	}
+
+	on SearchFinished {
+		info("Search completed. Shutting down SearchManager.")
+		in(3000)[killMe()]
+	}
+}

@@ -1,0 +1,82 @@
+package io.sarl.demos.basic.holarchy
+
+import java.util.UUID
+import java.util.concurrent.ConcurrentLinkedQueue
+import io.sarl.api.core.*
+import java.nio.file.Paths
+import java.util.concurrent.ConcurrentSkipListMap
+
+agent searchagent {
+	uses Lifecycle, Schedules, Logging, InnerContextAccess, DefaultContextInteractions
+
+	val childUIDs = new ConcurrentSkipListMap<UUID, String>()
+	var searchCriteria : String
+	var idParent : UUID
+
+	on Initialize {
+		loggingName = "SearchAgent"
+		info("SearchAgent initialized.")
+	}
+
+	on SearchRequest {
+		if (occurrence.source != ID) { 
+			idParent = occurrence.source.ID
+			searchCriteria = occurrence.searchCriteria
+			val path = Paths.get(occurrence.dirPath)
+			val directory = path.toFile
+
+			if (directory.isDirectory && directory.listFiles != null) {
+				info("Searching in directory: " + directory.path + " with criteria: " + searchCriteria)
+				for (file : directory.listFiles) {
+					if (file.isDirectory) {
+						val aid = UUID.randomUUID
+						childUIDs.put(aid, file.path)
+						spawnInContextWithID(searchagent, aid, innerContext)
+						info("Spawned SearchAgent for sub-directory: " + file.path)
+					} else if (file.path.contains(searchCriteria)) {
+						info("File found: " + file.path)
+						emit(new FileFound(file.path))[it.ID == idParent]
+					}
+				}
+				if (childUIDs.isEmpty) {
+					completeSearch("No sub-agents required; search finished.")
+				}
+			} else {
+				error("Invalid or inaccessible directory: " + occurrence.dirPath)
+			}
+		}
+	}
+
+	on ParticipantJoined {
+		if (occurrence.spaceID.contextID == innerContext.ID) {
+			val childID = occurrence.source.ID
+			if (childUIDs.containsKey(childID)) {
+				val path = childUIDs.get(childID)
+				info("Child agent joined for path: " + path)
+				innerContext.defaultSpace.emit(ID, new SearchRequest(path, searchCriteria))[it == occurrence.source]
+			}
+		}
+	}
+
+	on FileFound {
+		info("Reporting found file to parent agent")
+		emit(new FileFound(occurrence.fileFoundPath))[it.ID == idParent]
+	}
+
+	on MemberLeft {
+		val childID = occurrence.agentID
+		if (childUIDs.containsKey(childID)) {
+			val path = childUIDs.remove(childID)
+			info("Sub-agent left for path: " + path + ". Remaining sub-agents: " + childUIDs.size)
+			if (childUIDs.isEmpty) {
+				completeSearch("All sub-agents completed; ending search.")
+			}
+		}
+	}
+
+	def completeSearch(message : String) {
+		info(message)
+		emit(new SearchFinished())
+		in(2000)[killMe()]
+	}
+}
